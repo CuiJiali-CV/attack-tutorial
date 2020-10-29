@@ -106,8 +106,8 @@
         <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch1/wombat_delta.jpg" height="224" width="224" >
     </div>
 
+   <br />
     
-
   *  <div align=center>
          <img src="https://latex.codecogs.com/gif.latex?maximize_{\delta&space;\in&space;\Delta}&space;\ell(h_\theta(x&space;&plus;\delta),&space;y)" />
     </div> 
@@ -156,7 +156,7 @@
         <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch1/airline_delta.jpg" height="224" width="224" >
     </div>
 
-    
+    <br />
 
   -  <div align=center>
          <img src="https://latex.codecogs.com/gif.latex?maximize_{\delta&space;\in&space;\Delta}&space;(\ell(h_\theta(x&space;&plus;\delta),&space;y)-&space;\ell(h_\theta(x&space;&plus;\delta),&space;y_{\mathrm{target}})&space;\equiv&space;maximize_{\delta&space;\in&space;\Delta}(h_\theta(x&plus;\delta)_{y_{\mathrm{target}}}-&space;h_\theta(x&plus;\delta)_{y}&space;)" />
