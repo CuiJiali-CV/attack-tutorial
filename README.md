@@ -168,14 +168,13 @@
 
 
 
-## Robust Training
+## Robust Training (Two classes linear model)
 
-* #####  Linear model
+* #####  Two Classes Linear model
 
   1. <div align=center>
          <img src="https://latex.codecogs.com/gif.latex?minimize_{W,b}&space;\frac{1}{|D|}\sum_{x,y&space;\in&space;D}&space;\max_{\|\delta\|&space;\leq&space;\epsilon}\ell(W(x&plus;\delta)&space;&plus;&space;b,&space;y)" />
      </div> 
-
 
      </br>
 
@@ -307,6 +306,57 @@
   * <div align="center">
         <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch2/opt_att_imgs.png" height="400" width="400" >
     </div>
+
+* **Train two classes robust linear model**
+
+  * ```python
+    def epoch_robust(loader, model, epsilon, opt=None):
+        total_loss, total_err = 0., 0.
+        for X, y in loader:
+            yp = model(X.view(X.shape[0], -1))[:, 0] - epsilon * (2 * y.float() - 1) * model.weight.norm(1)
+            loss = nn.BCEWithLogitsLoss()(yp, y.float())
+            if opt:
+                opt.zero_grad()
+                loss.backward()
+                opt.step()
+    
+            total_err += ((yp > 0) * (y == 0) + (yp < 0) * (y == 1)).sum().item()
+            total_loss += loss.item() * X.shape[0]
+        return total_err / len(loader.dataset), total_loss / len(loader.dataset)
+    
+    model = nn.Linear(784, 1)
+    opt = optim.SGD(model.parameters(), lr=1e-1)
+    epsilon = 0.2
+    print("Rob. Train Err", "Rob. Train Loss", "Rob. Test Err", "Rob. Test Loss", sep="\t")
+    for i in range(20):
+        train_err, train_loss = epoch_robust(train_loader, model, epsilon, opt)
+        test_err, test_loss = epoch_robust(test_loader, model, epsilon)
+        print(*("{:.6f}".format(i) for i in (train_err, train_loss, test_err, test_loss)), sep="\t")
+    ```
+
+  * ```python
+    Rob. Train Err	Rob. Train Loss		Rob. Test Err	Rob. Test Loss
+    0.034189		0.135993			0.023641		0.098824**Test it with non-adversarial data set.**
+    ```
+
+  
+
+* **Test it with non-adversarial data set**
+
+  * ```python
+    from linear_model import epoch
+    train_err, train_loss = epoch(train_loader, model)
+    test_err, test_loss = epoch(test_loader, model)
+    print("Train Err", "Train Loss", "Test Err", "Test Loss", sep="\t")
+    print(*("{:.6f}".format(i) for i in (train_err, train_loss, test_err, test_loss)), sep="\t")
+    ```
+
+  * ```python
+    Train Err	Train Loss	Test Err	Test Loss
+    0.006238	0.015268	0.003783	0.008271
+    ```
+
+    
 
 
 ## Author
