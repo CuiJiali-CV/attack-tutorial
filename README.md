@@ -19,6 +19,7 @@
 
 
 
+
 # Attack Tutorial
 
 
@@ -106,11 +107,12 @@
         <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch1/wombat_delta.jpg" height="224" width="224" >
     </div>
 
-   <br />
     
-  *  <div align=center>
-         <img src="https://latex.codecogs.com/gif.latex?maximize_{\delta&space;\in&space;\Delta}&space;\ell(h_\theta(x&space;&plus;\delta),&space;y)" />
+
+  * <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?maximize_{\delta&space;\in&space;\Delta}&space;\ell(h_\theta(x&space;&plus;\delta),&space;y)" />
     </div> 
+
 
      <div align=center>
          <img src="https://latex.codecogs.com/gif.latex?\Delta&space;=&space;\{\delta&space;:&space;\|\delta\|_\infty&space;\leq&space;\epsilon\}" />
@@ -156,13 +158,155 @@
         <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch1/airline_delta.jpg" height="224" width="224" >
     </div>
 
-    <br />
+    
 
-  -  <div align=center>
-         <img src="https://latex.codecogs.com/gif.latex?maximize_{\delta&space;\in&space;\Delta}&space;(\ell(h_\theta(x&space;&plus;\delta),&space;y)-&space;\ell(h_\theta(x&space;&plus;\delta),&space;y_{\mathrm{target}})&space;\equiv&space;maximize_{\delta&space;\in&space;\Delta}(h_\theta(x&plus;\delta)_{y_{\mathrm{target}}}-&space;h_\theta(x&plus;\delta)_{y}&space;)" />
+  - <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?maximize_{\delta&space;\in&space;\Delta}&space;(\ell(h_\theta(x&space;&plus;\delta),&space;y)-&space;\ell(h_\theta(x&space;&plus;\delta),&space;y_{\mathrm{target}})&space;\equiv&space;maximize_{\delta&space;\in&space;\Delta}(h_\theta(x&plus;\delta)_{y_{\mathrm{target}}}-&space;h_\theta(x&plus;\delta)_{y}&space;)" />
     </div> 
 
 
+
+
+
+## Robust Training
+
+* #####  Linear model
+
+  1. <div align=center>
+         <img src="https://latex.codecogs.com/gif.latex?minimize_{W,b}&space;\frac{1}{|D|}\sum_{x,y&space;\in&space;D}&space;\max_{\|\delta\|&space;\leq&space;\epsilon}\ell(W(x&plus;\delta)&space;&plus;&space;b,&space;y)" />
+     </div> 
+
+
+     </br>
+
+  2. <div align=center>
+         <img src="https://latex.codecogs.com/gif.latex?maximize_{\|\delta\|&space;\leq&space;\epsilon}&space;\ell(w^T&space;(x&plus;\delta),&space;y)&space;\equiv&space;maximize_{\|\delta\|&space;\leq&space;\epsilon}&space;L(y&space;\cdot&space;(w^T(x&plus;\delta)&space;&plus;&space;b))." />
+     </div> 
+
+    </br>
+
+  3. <div align=center>
+         <img src="https://latex.codecogs.com/gif.latex?max_{\|\delta\|&space;\leq&space;\epsilon}&space;L&space;(y&space;\cdot&space;(w^T(x&plus;\delta)&space;&plus;&space;b)&space;)&space;=&space;L\left(&space;\min_{\|\delta\|&space;\leq&space;\epsilon}&space;y&space;\cdot&space;(w^T(x&plus;\delta)&space;&plus;&space;b)&space;\right)&space;=&space;L\left(y\cdot(w^Tx&space;&plus;&space;b)&space;&plus;&space;\min_{\|\delta\|&space;\leq&space;\epsilon}&space;y&space;\cdot&space;w^T\delta&space;\right)" />
+     </div> 
+
+
+     </br>
+
+  4. <div align=center>
+         <img src="https://latex.codecogs.com/gif.latex?\delta^\star&space;=&space;-&space;y&space;\epsilon&space;\cdot&space;\mathrm{sign}(w)" />
+     </div> 
+
+
+     </br>
+
+  5. <div align=center>
+         <img src="https://latex.codecogs.com/gif.latex?y&space;\cdot&space;w^T\delta^\star&space;=&space;y&space;\cdot&space;\sum_{i=1}&space;-y&space;\epsilon&space;\cdot&space;\mathrm{sign}(w_i)&space;w_i&space;=&space;-y^2&space;\epsilon&space;\sum_{i}&space;|w_i|&space;=&space;-\epsilon&space;\|w\|_1." />
+     </div> 
+
+
+     </br>
+
+  6. <div align=center>
+         <img src="https://latex.codecogs.com/gif.latex?minimize_{w,b}&space;\frac{1}{D}\sum_{(x,y)&space;\in&space;D}&space;L&space;\left(y&space;\cdot&space;(w^Tx&space;&plus;&space;b)&space;-&space;\epsilon&space;\|w\|_*&space;\right&space;)" />
+     </div> 
+
+* **Train two classes linear model**
+
+  * ```python
+    mnist_train = datasets.MNIST("./data", train=True, download=True, transform=transforms.ToTensor())
+    mnist_test = datasets.MNIST("./data", train=False, download=True, transform=transforms.ToTensor())
+    
+    train_idx = mnist_train.targets <= 1
+    mnist_train.data = mnist_train.data[train_idx]
+    mnist_train.targets = mnist_train.targets[train_idx]
+    
+    test_idx = mnist_test.targets <= 1
+    mnist_test.data = mnist_test.data[test_idx]
+    mnist_test.targets = mnist_test.targets[test_idx]
+    
+    train_loader = DataLoader(mnist_train, batch_size = 100, shuffle=True)
+    test_loader = DataLoader(mnist_test, batch_size = 100, shuffle=False)
+    
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    
+    
+    # do a single pass over the data
+    def epoch(loader, model, opt=None):
+        total_loss, total_err = 0., 0.
+        for X, y in loader:
+            yp = model(X.view(X.shape[0], -1))[:, 0]
+            loss = nn.BCEWithLogitsLoss()(yp, y.float())
+            if opt:
+                opt.zero_grad()
+                loss.backward()
+                opt.step()
+    
+            total_err += ((yp > 0) * (y == 0) + (yp < 0) * (y == 1)).sum().item()
+            total_loss += loss.item() * X.shape[0]
+        return total_err / len(loader.dataset), total_loss / len(loader.dataset)
+    
+    model = nn.Linear(784, 1)
+    opt = optim.SGD(model.parameters(), lr=1.)
+    print("Train Err", "Train Loss", "Test Err", "Test Loss", sep="\t")
+    for i in range(10):
+        train_err, train_loss = epoch(train_loader, model, opt)
+        test_err, test_loss = epoch(test_loader, model)
+        print(*("{:.6f}".format(i) for i in (train_err, train_loss, test_err, test_loss)), sep="\t")
+    
+    X_test = (test_loader.dataset.test_data.float()/255).view(len(test_loader.dataset),-1)
+    y_test = test_loader.dataset.test_labels
+    yp = model(X_test)[:,0]
+    idx = (yp > 0) * (y_test == 0) + (yp < 0) * (y_test == 1)
+    plt.imshow(1-X_test[idx][0].view(28,28).numpy(), cmap="gray")
+    plt.title("True Label: {}".format(y_test[idx][0].data.item()))
+    plt.savefig('./prediction.png')
+    
+    epsilon = 0.2
+    delta = epsilon * model.weight.detach().sign().view(28,28)
+    plt.imsave('./opt_delta.jpg',1-delta.numpy(), cmap="gray")
+    ```
+
+  * <div align="center">
+        <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch2/prediction.png" height="300" width="400" >
+    </div>
+
+* **Create optimized delta** 
+
+  * ```python
+    epsilon = 0.2
+    delta = epsilon * model.weight.detach().sign().view(28,28)
+    plt.imsave('./opt_delta.jpg',1-delta.numpy(), cmap="gray")
+    ```
+
+  * <div align="center">
+        <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch2/opt_delta.jpg" height="250" width="250" >
+    </div>
+
+* **Test with adversarial example**
+
+  * ```python
+    def epoch_adv(loader, model, delta):
+        total_loss, total_err = 0.,0.
+        for X,y in loader:
+            yp = model((X-(2*y.float()[:,None,None,None]-1)*delta).view(X.shape[0], -1))[:,0]
+            loss = nn.BCEWithLogitsLoss()(yp, y.float())
+            total_err += ((yp > 0) * (y==0) + (yp < 0) * (y==1)).sum().item()
+            total_loss += loss.item() * X.shape[0]
+        return total_err / len(loader.dataset)
+    
+    print(epoch_adv(test_loader, model, delta[None,None,:,:]))
+    ```
+
+  * ```python
+    Output
+    err: 0.857210401891253
+    ```
+
+  * <div align="center">
+        <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch2/opt_att_imgs.png" height="400" width="400" >
+    </div>
 
 
 ## Author
