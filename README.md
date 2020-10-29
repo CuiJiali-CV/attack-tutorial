@@ -356,7 +356,78 @@
     0.006238	0.015268	0.003783	0.008271
     ```
 
+
+
+
+
+## Neural networks 
+
+* #####  Lower bounding the inner maximization (i.e., adversarial attacks)
+
+  * <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?maximize_{\|\delta\|&space;\leq&space;\epsilon}&space;\ell(h_\theta(x&space;&plus;&space;\delta),&space;y)." />
+    </div> 
+
     
+
+    
+
+  * **FGSM**
+
+  * <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?g&space;:=&space;\nabla_\delta&space;\ell(h_\theta(x&space;&plus;&space;\delta),y)" />
+    </div> 
+
+  * <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?\delta&space;:=&space;\delta&space;&plus;&space;\alpha&space;g" />
+    </div> 
+
+  * for some step size α and then project back into the norm ball defined by ∥δ∥≤ϵ. But how big a step do we take? For concreteness, let’s consider the particular case of the ℓ∞ norm ∥δ∥∞≤ϵ, where, as we mentioned before, projecting onto this norm ball simply involves clipping values of δ to lie within the range [−ϵ,ϵ]. If our initial δ is zero, this gives the update
+
+    
+
+  * <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?\delta&space;:=&space;\mathrm{clip}(\alpha&space;g,&space;[-\epsilon,&space;\epsilon])." />
+    </div> 
+
+  *  If we want to make increase the loss as much as possible, it makes sense to take as large a step as possible, i.e., take α to be very large (of course knowing that we won’t take *that* big a step, since we’re projecting back into the ℓ∞ ball afterwards). It is not hard to see that for α large enough, the relative sizes of the entries of g won’t matter: we will simply take δi to be either +ϵ or −ϵ depending upon the sign of gi. In other words, for large α, this update becomes
+
+  * <div align=center>
+        <img src="https://latex.codecogs.com/gif.latex?\delta&space;:=&space;\epsilon&space;\cdot&space;\mathrm{sign}(g)." />
+    </div> 
+
+    
+
+  * ```python
+    def fgsm(model, X, y, epsilon):
+        """ Construct FGSM adversarial examples on the examples X"""
+        delta = torch.zeros_like(X, requires_grad=True)
+        loss = nn.CrossEntropyLoss()(model(X + delta), y)
+        loss.backward()
+        return epsilon * delta.grad.detach().sign()
+    
+    yp = model_dnn_2(X)
+    plot_images(X, y, yp, 3, 6, './dnn2_nat.png')
+    ```
+
+  * <div align="center">
+        <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch3/dnn2_nat.png" height="300" width="300" >
+    </div>
+
+  * ```python
+    delta = fgsm(model_dnn_2, X, y, 0.1)
+    yp = model_dnn_2(X + delta)
+    plot_images(X+delta, y, yp, 3, 6, './dnn2_attack.png')
+    
+    delta = fgsm(model_cnn, X, y, 0.1)
+    yp = model_cnn(X + delta)
+    plot_images(X+delta, y, yp, 3, 6, './cnn_attack.png')
+    ```
+
+  * <div align="center">
+        <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch3/dnn2_attack.png" height="300" width="300" >
+        <img src="https://github.com/CuiJiali-CV/attack-tutorial/raw/main/ch3/cnn_attack.png" height="300" width="300" >
+    </div>
 
 
 ## Author
