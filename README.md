@@ -336,7 +336,7 @@
 
   * ```python
     Rob. Train Err	Rob. Train Loss		Rob. Test Err	Rob. Test Loss
-    0.034189		0.135993			0.023641		0.098824**Test it with non-adversarial data set.**
+    0.034189		0.135993			0.023641		0.098824
     ```
 
   
